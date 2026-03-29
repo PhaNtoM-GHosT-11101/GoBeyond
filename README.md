@@ -311,8 +311,8 @@ Problem Statement 2: *Recruiters Spend Too Much Time Screening Candidates*
 
 Built by a **Placement Coordinator at NIT Agartala** who has personally witnessed resume fraud affecting real students and real recruiters.
 
-- **LinkedIn:** [Your LinkedIn Profile](https://linkedin.com/in/YOUR_HANDLE)
-- **GitHub:** [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+- **LinkedIn:** [Your LinkedIn Profile](https://linkedin.com/in/add karna hai )
+- **GitHub:** [@YOUR_USERNAME](https://github.com/PhaNtoM-GHosT-11101)
 
 ---
 
