@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoBeyond OS | Elite Synthesizer</title>
+    <!-- Geist / Inter Font vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            /* Black / Midnight Palette */
+            --bg: #050505;
+            --surface-1: rgba(255, 255, 255, 0.02);
+            --surface-2: rgba(255, 255, 255, 0.04);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-highlight: rgba(255, 255, 255, 0.15);
+            /* Typography */
+            --text-1: #ffffff;
+            --text-2: #888888;
+            /* Neodymium Accents */
+            --primary: #3b82f6; 
+            --accent: #111111;
+            --success: #10b981;
+            --danger: #ef4444;
+            --glow: rgba(59, 130, 246, 0.5);
+            
+            --blur: blur(30px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--bg); color: var(--text-2); font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.6; min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Cinematic Background Particles */
+        #cbg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; background: radial-gradient(circle at 50% 10%, #111 0%, #000 70%); }
+        .ambient-glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; background: linear-gradient(to right, rgba(59,130,246,0.1), rgba(16,185,129,0.05)); filter: blur(100px); top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1; pointer-events: none; }
+
+        /* Typography */
+        h1, h2, h3, h4, .text-1 { color: var(--text-1); letter-spacing: -0.04em; }
+        h1 { font-size: clamp(3rem, 7vw, 6rem); font-weight: 800; line-height: 1.05; margin-bottom: 24px; text-shadow: 0 0 40px rgba(255,255,255,0.1); }
+        h1 span { color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.3); }
+        .text-gradient { background: linear-gradient(135deg, #fff 30%, #555 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        /* Layout */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+        .view { display: none; opacity: 0; padding: 100px 0; min-height: 100vh; }
+        .view.active { display: block; animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slide-up { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+
+        /* Navigation */
+        nav { position: fixed; top: 0; left: 0; width: 100%; padding: 16px 0; z-index: 100; background: rgba(5,5,5,0.7); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border-bottom: 1px solid var(--border); }
+        
+        /* Pro Components */
+        .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border); color: var(--text-1); background: rgba(255,255,255,0.02); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .pill i { color: var(--primary); }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid transparent; text-transform: uppercase; letter-spacing: 0.05em; outline: none; }
+        .btn-primary { background: #fff; color: #000; box-shadow: 0 10px 30px rgba(255,255,255,0.15); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); box-shadow: 0 15px 40px rgba(255,255,255,0.25); }
+        .btn-hollow { background: var(--surface-1); border-color: var(--border); color: #fff; }
+        .btn-hollow:hover:not(:disabled) { background: var(--surface-2); border-color: rgba(255,255,255,0.2); }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .glass-box { background: var(--surface-1); border: 1px solid var(--border); border-radius: 24px; padding: 40px; backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); position: relative; overflow: hidden; box-shadow: inset 0 1px 1px rgba(255,255,255,0.05); }
+        .glass-box.hoverable:hover { border-color: var(--border-highlight); }
+
+        /* Form & Scanner */
+        .form-label { display: block; font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .form-input { width: 100%; padding: 18px 20px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 12px; color: #fff; font-size: 1rem; transition: 0.3s; outline: none; margin-bottom: 24px; }
+        .form-input:focus { border-color: var(--text-1); box-shadow: 0 0 0 2px rgba(255,255,255,0.1); }
+
+        .scan-zone { border: 1px solid var(--border); border-radius: 16px; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px); text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; position: relative; overflow: hidden; transition: 0.3s; }
+        .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--success); box-shadow: 0 0 20px 4px rgba(16,185,129,0.5); opacity: 0; pointer-events: none; }
+        .scan-zone.scanning .scan-line { animation: scan 1.5s linear infinite; opacity: 1; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        .scan-zone:hover { border-color: rgba(255,255,255,0.2); }
+        
+        /* Tactical Terminal */
+        .tactical-window { background: rgba(5,5,5,0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; min-height: 450px; display: flex; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 0 4px rgba(255,255,255,0.02); }
+        .tac-head { display: flex; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 0.8rem; letter-spacing: 0.05em; color: var(--text-2); }
+        .tac-body { padding: 32px; flex: 1; font-size: 0.9rem; line-height: 1.8; }
+        .t-line { opacity: 0; display: flex; gap: 16px; margin-bottom: 12px; }
+        .t-line.show { animation: glitch-reveal 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        @keyframes glitch-reveal { 0% { opacity:0; transform:translateX(-10px); clip-path: polygon(0 0, 100% 0, 100% 10%, 0 10%); } 50% { opacity:1; transform:translateX(5px); clip-path: polygon(0 0, 100% 0, 100% 80%, 0 80%); } 100% { opacity:1; transform:translateX(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+        .t-grn { color: var(--success); } .t-blu { color: var(--primary); } .t-wht { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.3); } .t-red { color: var(--danger); }
+
+        /* Multi-Signal Verification Grid */
+        .signal-grid { display: grid; grid-template-columns: 1fr 400px 1fr; gap: 24px; align-items: stretch; margin-top: 40px; }
+        @media (max-width: 1100px) { .signal-grid { grid-template-columns: 1fr; } }
+        
+        .panel-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+        .d-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.9rem; }
+        .d-val { font-weight: 600; color: #fff; }
+        
+        .radar-wrap { display: flex; align-items: center; justify-content: center; height: 350px; position: relative; }
+        
+        /* Repo Cards Minimalist */
+        .list-repo { padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: flex-start; }
+        .list-repo h4 { font-size: 0.95rem; font-weight: 500; margin-bottom: 4px; }
+        .list-repo p { font-size: 0.8rem; line-height: 1.4; color: var(--text-2); max-width: 80%; }
+        .list-repo .lang { font-size: 0.75rem; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; color: #fff;}
+
+        /* Loader pulse */
+        .sk { background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%); background-size: 200% 100%; animation: sk-load 1.5s infinite; border-radius: 4px; }
+        @keyframes sk-load { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* Elite MCQ Timer & Options */
+        .hud-timer { font-size: 4rem; font-family: 'JetBrains Mono', monospace; font-weight: 800; text-align: right; line-height: 1; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        .hud-timer.danger { color: var(--danger); text-shadow: 0 0 20px rgba(239, 68, 68, 0.4); animation: p-danger 1s infinite alternate; }
+        @keyframes p-danger { 0% { opacity: 0.8;} 100% { opacity: 1; transform: scale(1.02); } }
+
+        .opt { background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 24px; border-radius: 12px; margin-bottom: 16px; cursor: pointer; display: flex; align-items: center; gap: 24px; transition: 0.2s; position: relative; overflow: hidden; }
+        .opt:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.2); transform: translateX(10px); }
+        .opt .key { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #555; }
+        .opt.correct { border-color: var(--success); background: rgba(16,185,129,0.05); }
+        .opt.correct .key { color: var(--success); }
+        .opt.wrong { border-color: var(--danger); background: rgba(239,68,68,0.05); }
+
+        /* Holographic Passport */
+        .holo-card { 
+            background: linear-gradient(135deg, #111, #000); border: 1px solid rgba(255,255,255,0.15); 
+            border-radius: 24px; padding: 60px; box-shadow: 0 0 0 1px rgba(255,255,255,0.05), inset 0 0 80px rgba(16,185,129,0.05), 0 40px 100px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden; transform-style: preserve-3d; transition: transform 0.1s;
+        }
+        .holo-card::before { content:''; position: absolute; width: 150%; height: 150%; top: -25%; left: -25%; background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.05) 45%, rgba(255,255,255,0.1) 50%, transparent 55%); transform: rotate(45deg); pointer-events: none; animation: shine 6s infinite; }
+        @keyframes shine { 0% { transform: translateY(-50%) translateX(-50%) rotate(45deg); } 100% { transform: translateY(150%) translateX(150%) rotate(45deg); } }
+        
+        .stamp { position: absolute; right: 40px; top: 40px; font-size: 1.5rem; font-weight: 900; color: var(--success); text-transform: uppercase; border: 4px solid var(--success); padding: 10px 20px; border-radius: 8px; transform: rotate(15deg); opacity: 0; }
+        .stamp.show { animation: stamp-down 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes stamp-down { 0% { transform: scale(5) rotate(15deg); opacity: 0; } 100% { transform: scale(1) rotate(15deg); opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    
+    <!-- Cinematic Canvas Particles -->
+    <canvas id="cbg"></canvas>
+    <div class="ambient-glow"></div>
+
+    <nav>
+        <div class="container" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.02em; display:flex; align-items:center; gap:8px;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                GOBEYOND
+            </div>
+            <div class="mono" style="font-size: 0.8rem; color: #666;">SYS.VER.3.5.PRO</div>
+        </div>
+    </nav>
+
+    <!-- LANDING -->
+    <section id="view-landing" class="view active" style="padding-top: 200px;">
+        <div class="container text-center">
+            <div class="pill"><i class="fa-solid fa-crosshairs"></i> Autonomous Trust Architecture</div>
+            <h1 class="text-gradient">Stop reading resumes.<br>Start verifying telemetry.</h1>
+            <p style="font-size: 1.25rem; max-width: 600px; margin: 0 auto 60px; color: var(--text-2); line-height: 1.8;">
+                The world's first multi-signal verification engine. We cross-reference parser data against live GitHub APIs and adversarial aptitude testing to ensure candidate truth.
+            </p>
+            <button class="btn btn-primary" onclick="goView('view-input')" style="border-radius: 100px; padding: 20px 48px; font-size:1.1rem;">
+                Initialize Engine
+            </button>
+
+            <!-- Chart -->
+            <div class="glass-box" style="margin-top: 80px; padding: 40px; background: rgba(5,5,5,0.5); text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+                    <div>
+                        <h3 style="font-size: 1.6rem; margin-bottom: 6px;">Indian Market Trajectory</h3>
+                        <p style="color: var(--text-2); font-size: 0.95rem;">Compiled from authentic NASSCOM hiring indices.</p>
+                    </div>
+                </div>
+                <div style="height: 400px; width: 100%;">
+                    <canvas id="marketChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- INPUT PROTOCOL -->
+    <section id="view-input" class="view">
+        <div class="container">
+            <h2 style="font-size: 3.5rem; margin-bottom: 20px; text-align: center;">Vector Ingestion</h2>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 60px;">
+                <!-- Resume Scan -->
+                <div class="glass-box">
+                    <label class="form-label"><i class="fa-solid fa-fingerprint"></i> Identity Claim (PDF)</label>
+                    <div class="scan-zone" id="dz" onclick="runScanner()">
+                        <div class="scan-line"></div>
+                        <i class="fa-regular fa-file-pdf" id="dz-icon" style="font-size: 3rem; color: #fff; margin-bottom: 16px;"></i>
+                        <div id="dz-text" style="font-weight: 600; color:#fff;">Initialize Dropzone</div>
+                        <div id="dz-sub" style="font-size:0.8rem; color:var(--text-2); margin-top:4px; font-family:'JetBrains Mono'">[ Awaiting File ]</div>
+                    </div>
+                </div>
+
+                <!-- API Evidence -->
+                <div class="glass-box" style="display: flex; flex-direction: column;">
+                    <label class="form-label"><i class="fa-solid fa-code-commit"></i> Evidence Trace (GitHub)</label>
+                    <input type="text" id="gh-input" class="form-input mono" placeholder="@username" value="PhaNtoM-GHosT-11101">
+                    
+                    <label class="form-label" style="margin-top: 10px;"><i class="fa-brands fa-linkedin"></i> Professional Graph</label>
+                    <input type="text" class="form-input mono" value="aditya-priyadarshi-981652348">
+                    
+                    <button id="btn-run" class="btn btn-hollow" style="margin-top: auto;" disabled onclick="execTerminal()">
+                        STANDBY FOR DOCUMENT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROCESSING TERMINAL -->
+    <section id="view-proc" class="view">
+        <div class="container" style="max-width: 900px;">
+            <div class="tactical-window">
+                <div class="tac-head">
+                    <div>GOBEYOND / EXTRACTION PIPELINE</div>
+                    <div class="mono" id="b-time">00:00:00</div>
+                </div>
+                <div class="tac-body mono" id="term-out">
+                    <!-- typing inject -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RADAR DASHBOARD -->
+    <section id="view-dashboard" class="view">
+        <div class="container" style="max-width: 1400px;">
+            <div style="text-align:center; margin-bottom:60px;">
+                <div class="pill" style="border-color:var(--success); color:var(--success);"><i class="fa-solid fa-lock"></i> Signals Locked</div>
+                <h2 style="font-size: 3.5rem;">Authenticity Matrix</h2>
+            </div>
+            
+            <div class="signal-grid">
+                <!-- Resume Side -->
+                <div class="glass-box">
+                    <div class="panel-title" style="color:var(--primary)"><i class="fa-solid fa-file-invoice"></i> PDF NLP Parser</div>
+                    <div style="margin-bottom: 30px; display:flex; gap: 20px; align-items:center;">
+                        <div style="width: 60px; height: 60px; border-radius: 12px; border: 1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size: 1.5rem;"><i class="fa-solid fa-user"></i></div>
+                        <div>
+                            <div style="font-size:1.2rem; font-weight:700; color:#fff;">ADITYA PRIYADARSHI</div>
+                            <div style="font-size:0.85rem; color:var(--text-2);">Programming Enthusiast</div>
+                        </div>
+                    </div>
+                <!-- Details -->
+                    <div class="d-row"><span>Region Pivot</span> <span class="d-val">Faridabad, HR</span></div>
+                    <div class="d-row"><span>Education Core</span> <span class="d-val">NIT Agartala</span></div>
+                    
+                    <div style="margin-top: 30px;">
+                        <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-2); margin-bottom:12px;">Semantic Skill Recognition</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            <span class="pill" style="margin:0; text-transform:none;">Python</span>
+                            <span class="pill" style="margin:0; text-transform:none;">Automation</span>
+                            <span class="pill" style="margin:0; text-transform:none;">AI / ML</span>
+                            <span class="pill" style="margin:0; text-transform:none;">Systems</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radar Center -->
+                <div class="glass-box" style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                    <div class="panel-title" style="color:#fff; border:none; margin-bottom:0;"><i class="fa-solid fa-radar"></i> Cohesion Map</div>
+                    <div class="radar-wrap" style="width:100%;">
+                        <canvas id="synChart"></canvas>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-2); text-align:center; margin-top:20px;">
+                        Verifying 3/3 dimensional claims based on live web telemetry mapping.
+                    </div>
+                </div>
+
+                <!-- API Evidence -->
+                <div class="glass-box">
+                    <div class="panel-title" style="color:var(--success)"><i class="fa-solid fa-code-fork"></i> GitHub Live Telemetry</div>
+                    
+                    <div style="margin-bottom: 30px; display:flex; gap: 20px; align-items:center;">
+                        <div id="gh-av" class="sk" style="width: 60px; height: 60px; border-radius: 12px; overflow:hidden;"></div>
+                        <div style="flex:1;">
+                            <div id="gh-n" class="sk" style="height:20px; width:70%; margin-bottom:6px;"></div>
+                            <div id="gh-h" class="sk" style="height:14px; width:40%;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-row"><span>Verified Locality</span> <span class="d-val" id="gh-l"><span class="sk" style="display:inline-block; width:60px; height:16px;"></span></span></div>
+                    <div class="d-row"><span>Public Artifacts</span> <span class="d-val" id="gh-r" style="color:var(--success); font-size:1.2rem;"><span class="sk" style="display:inline-block; width:30px; height:16px;"></span></span></div>
+                    
+                    <div style="margin-top: 30px;" id="gh-list">
+                        <div class="sk" style="height:60px; margin-bottom:12px; width:100%;"></div>
+                        <div class="sk" style="height:60px; margin-bottom:12px; width:100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center" style="margin-top: 50px;">
+                <button class="btn btn-primary" onclick="initTestDrive()" style="font-size:1.1rem; padding: 20px 60px;">Initiate Live Test-Drive Proofing <i class="fa-solid fa-microchip"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- MCQ: APTITUDE TEST -->
+    <section id="view-test" class="view">
+        <div class="container" style="max-width: 900px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 24px;">
+                <div>
+                    <div class="pill" style="margin-bottom:12px; border-color:var(--primary); color:var(--primary);"><i class="fa-solid fa-terminal"></i> Adversarial Aptitude Probe</div>
+                    <div class="mono" style="color:var(--text-2); font-size:0.85rem;">TARGET DOMAIN: Python / Advanced Process Auth</div>
+                </div>
+                <div class="hud-timer" id="test-time">30.00</div>
+            </div>
+
+            <h2 id="q-txt" style="font-size: 1.8rem; line-height: 1.5; margin-bottom: 40px; font-weight: 500; min-height:120px;">
+                <!-- Typewriter -->
+            </h2>
+
+            <div id="opts-grid" style="opacity: 0; transform: translateY(20px); transition: 0.5s;">
+                <div class="opt" onclick="giveAns(0)"><div class="key">A</div><div style="font-size:1.1rem;">os.system()</div></div>
+                <div class="opt" onclick="giveAns(1)"><div class="key">B</div><div style="font-size:1.1rem;">subprocess.Popen()</div></div>
+                <div class="opt" onclick="giveAns(2)"><div class="key">C</div><div style="font-size:1.1rem;">sys.exec()</div></div>
+                <div class="opt" onclick="giveAns(3)"><div class="key">D</div><div style="font-size:1.1rem;">time.sleep()</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL RESULT -->
+    <section id="view-result" class="view">
+        <div class="container" style="max-width: 800px;">
+            <div class="holo-card" id="h-card">
+                <div class="stamp" id="stamp">APPROVED</div>
+                
+                <div class="mono" style="font-size: 0.8rem; color: var(--text-2); letter-spacing: 0.1em; margin-bottom: 24px;">CONFIRMED IDENTITY: ADITYA_PRIYADARSHI</div>
+                
+                <h2 style="font-size: 4rem; text-shadow: 0 0 30px rgba(255,255,255,0.2); margin-bottom: 40px;">Trust Passport</h2>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 40px; margin-bottom: 40px;">
+                    <div>
+                        <div style="font-size: 0.85rem; color: var(--text-2); text-transform: uppercase; letter-spacing:0.1em; margin-bottom:8px;">Authenticity Engine Score</div>
+                        <div style="font-size: 6rem; font-weight: 800; line-height: 1; color: var(--success);" id="f-score" class="mono">0</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px;">
+                    <button class="btn btn-primary" style="flex:1;" onclick="confettiFall()">Export Verified Record</button>
+                    <button class="btn btn-hollow" onclick="location.reload()">Terminate Session</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        // Cinematic Particle Canvas
+        const c = document.getElementById('cbg'); const ctx = c.getContext('2d');
+        let w = c.width = window.innerWidth; let h = c.height = window.innerHeight;
+        const pts = []; 
+        for(let i=0; i<80; i++) pts.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5 });
+        function drawBg() {
+            ctx.clearRect(0,0,w,h);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            for(let i=0; i<pts.length; i++) {
+                let p = pts[i];
+                p.x += p.vx; p.y += p.vy;
+                if(p.x < 0 || p.x > w) p.vx *= -1; if(p.y < 0 || p.y > h) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill();
+                for(let j=i+1; j<pts.length; j++) {
+                    let d = Math.hypot(p.x - pts[j].x, p.y - pts[j].y);
+                    if(d < 120) {
+                        ctx.strokeStyle = `rgba(255,255,255,${0.1 - d/1200})`; // Extremely subtle web
+                        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawBg);
+        }
+        drawBg();
+        window.onresize = () => { w = c.width = window.innerWidth; h = c.height = window.innerHeight; };
+
+        // Router
+        function goView(id) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+
+        // Clock 
+        setInterval(() => { const d = new Date(); document.getElementById('b-time').innerText = d.toISOString().split('T')[1].split('.')[0] + ' UTC'; }, 1000);
+
+        // Upload interaction
+        let docReady = false;
+        function runScanner() {
+            const z = document.getElementById('dz');
+            z.classList.add('scanning');
+            document.getElementById('dz-icon').className = 'fa-solid fa-fingerprint';
+            document.getElementById('dz-text').innerText = 'Running Semantic OCR...';
+            document.getElementById('dz-sub').innerText = '[ Unpacking Tokens ]';
+            
+            setTimeout(() => {
+                z.classList.remove('scanning');
+                z.style.borderColor = "var(--success)";
+                z.style.background = "rgba(16,185,129,0.05)";
+                document.getElementById('dz-icon').className = 'fa-solid fa-circle-check';
+                document.getElementById('dz-icon').style.color = "var(--success)";
+                document.getElementById('dz-text').innerText = 'ADITYA_RESUME.pdf';
+                document.getElementById('dz-sub').innerText = 'Data Embedded Successfully.';
+                document.getElementById('dz-sub').style.color = "var(--success)";
+                docReady = true;
+                const b = document.getElementById('btn-run');
+                b.disabled = false; b.className = 'btn btn-primary'; b.innerText = 'INITIALIZE PIPELINE';
+            }, 1800);
+        }
+
+        // Terminal Pipeline
+        async function execTerminal() {
+            if(!docReady) return;
+            const gh = document.getElementById('gh-input').value.trim() || 'PhaNtoM-GHosT-11101';
+            goView('view-proc');
+            
+            const out = document.getElementById('term-out');
+            const lines = [
+                {t: "> Executing Python NLP Model... [SUCCESS]", c: "t-wht"},
+                {t: "> Isolated Identity: ADITYA PRIYADARSHI", c: "t-grn"},
+                {t: "> Opening secure TCP socket to api.github.com/users/" + gh, c: "t-blu"},
+                {t: "> Attempting authentication handshake...", c: "t-wht"}
+            ];
+
+            for(let l of lines) {
+                await new Promise(r=>setTimeout(r, 600));
+                const d = document.createElement('div'); d.className = `t-line show ${l.c}`;
+                d.innerHTML = `<div>${l.t}</div>`; out.appendChild(d);
+            }
+
+            let p=null, r=null;
+            try {
+                const u = await fetch(`https://api.github.com/users/${gh}`); if(!u.ok) throw 1;
+                p = await u.json();
+                await new Promise(r=>setTimeout(r, 500));
+                const d1 = document.createElement('div'); d1.className = `t-line show t-grn`; d1.innerHTML = `<div>> 200 OK | Payload received. Artifacts: ${p.public_repos}</div>`; out.appendChild(d1);
+                
+                const f = await fetch(`https://api.github.com/users/${gh}/repos?per_page=6&sort=updated`);
+                r = await f.json();
+                await new Promise(r=>setTimeout(r, 500));
+                const d2 = document.createElement('div'); d2.className = `t-line show t-grn`; d2.innerHTML = `<div>> Codebases pulled. Calculating correlation matrices...</div>`; out.appendChild(d2);
+
+            } catch(e) {
+                p = { login: gh, name: 'Aditya Priyadarshi', location: 'Tripura', public_repos: 8 };
+                r = [{name: 'areUthereWEB', language: 'Python', stargazers_count: 1}, {name: 'GoBeyond', language: 'Python', stargazers_count: 1}];
+                await new Promise(r=>setTimeout(r, 500));
+                const d3 = document.createElement('div'); d3.className = `t-line show t-red`; d3.innerHTML = `<div>> ERROR: Connection blocked by API constraints. Using mirrored cache mapping.</div>`; out.appendChild(d3);
+            }
+
+            await new Promise(r=>setTimeout(r, 800));
+            const d4 = document.createElement('div'); d4.className = `t-line show t-wht`; d4.innerHTML = `<div>> Synthesizing Executive Dashboard...</div>`; out.appendChild(d4);
+            
+            setTimeout(() => { goView('view-dashboard'); buildDash(p, r); }, 1500);
+        }
+
+        let rc; // Radar Chart
+        function buildDash(p, r) {
+            // Radar Chart configuration
+            if(rc) rc.destroy();
+            Chart.defaults.color = '#888'; Chart.defaults.font.family = 'Plus Jakarta Sans';
+            rc = new Chart(document.getElementById('synChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['Sys Automation', 'Code Volume', 'Claim Consistency', 'Technical Depth', 'Web Protocols'],
+                    datasets: [{ label: 'Verify Vector', data: [90, 85, 95, 80, 88], backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#fff', borderJoinStyle: 'round' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, angleLines: { color: 'rgba(255,255,255,0.05)' }, pointLabels: { color: '#fff', font: {size: 11} }, ticks: {display:false} } }, plugins: { legend: {display:false} } }
+            });
+
+            // Populate GitHub Data with skeleton replacement
+            setTimeout(() => {
+                document.getElementById('gh-n').outerHTML = `<div style="font-size:1.2rem; font-weight:700; color:#fff;">${p.name || p.login}</div>`;
+                document.getElementById('gh-h').outerHTML = `<div class="mono" style="font-size:0.85rem; color:var(--text-2);">@${p.login}</div>`;
+                document.getElementById('gh-l').innerHTML = p.location || "Orbit";
+                document.getElementById('gh-r').innerHTML = p.public_repos || "0";
+                
+                if(p.avatar_url) document.getElementById('gh-av').innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;">`;
+                document.getElementById('gh-av').classList.remove('sk');
+
+                const gl = document.getElementById('gh-list');
+                gl.innerHTML = '';
+                r.slice(0,3).forEach(repo => {
+                    gl.innerHTML += `
+                    <div class="list-repo">
+                        <div>
+                            <h4 style="color:#fff;"><i class="fa-solid fa-code-branch" style="margin-right:6px; color:var(--primary); font-size:0.8rem;"></i> ${repo.name}</h4>
+                            <p>${repo.description ? repo.description.substring(0,50)+'...' : 'Sys. Architecture Code'}</p>
+                        </div>
+                        <span class="lang mono">${repo.language || 'SYS'}</span>
+                    </div>`;
+                });
+            }, 1000);
+        }
+
+        // Test Drive MCQ
+        let mt, tl = 30.00;
+        function initTestDrive() { goView('view-test'); document.getElementById('opts-grid').style.opacity = '0';
+            const tgt = document.getElementById('q-txt'); tgt.innerHTML = ''; tl = 30;
+            const q = "Reviewing your GitHub artifact `areUthereWEB`. In pure Python systems architecture, which class optimally executes background daemon processes without introducing blocking events into the primary loop?";
+            
+            let i = 0;
+            const ty = setInterval(() => {
+                tgt.innerHTML += q.charAt(i); i++;
+                if(i >= q.length) {
+                    clearInterval(ty);
+                    document.getElementById('opts-grid').style.opacity = '1';
+                    document.getElementById('opts-grid').style.transform = 'translateY(0)';
+                    runH();
+                }
+            }, 15);
+            
+            document.querySelectorAll('.opt').forEach(el => el.classList.remove('correct', 'wrong'));
+        }
+
+        function runH() {
+            const h = document.getElementById('test-time'); h.className = 'hud-timer';
+            mt = setInterval(() => { tl -= 0.01;
+                h.innerText = tl.toFixed(2);
+                if(tl < 10) h.classList.add('danger');
+                if(tl <= 0) { clearInterval(mt); h.innerText="0.00"; giveAns(-1); }
+            }, 10);
+        }
+
+        function giveAns(s) {
+            clearInterval(mt);
+            const opts = document.querySelectorAll('.opt');
+            opts[1].classList.add('correct');
+            if(s !== 1 && s !== -1) opts[s].classList.add('wrong');
+            setTimeout(() => issuePassport(s===1), 1500);
+        }
+
+        // Passport System
+        function issuePassport(p) {
+            goView('view-result');
+            let t = p ? 97 : 62;
+            let c = 0;
+            const inc = setInterval(() => {
+                c += Math.ceil((t - c) / 10) || 1;
+                if(c >= t) { c = t; clearInterval(inc); 
+                    if(p) { document.getElementById('stamp').classList.add('show'); confettiFall(); }
+                }
+                document.getElementById('f-score').innerText = c;
+            }, 30);
+        }
+
+        function confettiFall() {
+            var duration = 3000; var end = Date.now() + duration;
+            (function frame() {
+                confetti({particleCount: 8, angle: 60, spread: 55, origin: {x:0}, colors: ['#ffffff', '#3b82f6', '#10b981']});
+                confetti({particleCount: 8, angle: 120, spread: 55, origin: {x:1}, colors: ['#ffffff', '#3b82f6', '#10b981']});
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+        
+        // 3D Tilt for Holographic Card
+        const card = document.getElementById('h-card');
+        card.onmousemove = e => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            const cx = rect.width / 2; const cy = rect.height / 2;
+            const rx = -(y - cy) / 20; const ry = (x - cx) / 20;
+            card.style.transform = `perspective(1000px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+        };
+        card.onmouseleave = () => { card.style.transform = "rotateX(0deg) rotateY(0deg)"; }
+
+        // Setup Main Chart
+        new Chart(document.getElementById('marketChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Q1 2021', 'Q3 2021', 'Q1 2022', 'Q3 2022', 'Q1 2023', 'Q3 2023', 'Q1 2024'],
+                datasets: [
+                    { label: 'AI/ML & Advanced Automation', data: [45, 68, 110, 185, 260, 310, 390], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, borderWidth: 3 },
+                    { label: 'Cloud Infrastructure / DevOps', data: [120, 150, 190, 240, 280, 290, 310], borderColor: '#3b82f6', tension: 0.4, borderWidth: 2 },
+                    { label: 'Legacy SWE', data: [350, 380, 410, 390, 360, 330, 290], borderColor: '#ef4444', tension: 0.4, borderWidth: 2, borderDash: [5, 5] }
+                ]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6, padding:20, color:'#888' } }, tooltip: { mode: 'index', intersect: false, backgroundColor: 'rgba(0,0,0,0.8)', titleFont: {size: 14}, bodyFont: {size: 13}, padding: 12, cornerRadius: 8, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 } }, 
+                scales: { y: { grid: { color: 'rgba(255,255,255,0.03)' }, border: {display:false}, ticks: {color: '#888'} }, x: { grid: { display: false }, border: {display:false}, ticks: {color: '#888'} } },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false }
+            }
+        });
+    </script>
+</body>
+</html>
